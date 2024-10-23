@@ -18,13 +18,34 @@ public class Evaluator implements Transform {
 
     public Evaluator() {
         //variableValues = new HANLinkedList<>();
+
     }
 
     @Override
     public void apply(AST ast) {
         //variableValues = new HANLinkedList<>();
+        applyeStylesheet((Stylesheet) ast.root);
+    }
+
+    private void applyeStylesheet(Stylesheet node) {
+        applyStylerule((Stylerule) node.getChildren().get(0));
+    }
+
+    private void applyStylerule(Stylerule node) {
+        for (ASTNode child : node.getChildren()) {
+            if (child instanceof Declaration) {
+                applyDeclaration((Declaration) child);
+            }
+        }
 
     }
 
-    
+    private void applyDeclaration(Declaration node) {
+        //node.expression = evalExpression(node.expression); // TODO: Zoeken naar huiswerk opdracht
+        node.expression = node.expression;
+    }
+
+
+
+
 }
