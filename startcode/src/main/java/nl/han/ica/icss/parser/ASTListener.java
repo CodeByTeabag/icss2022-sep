@@ -3,6 +3,7 @@ package nl.han.ica.icss.parser;
 import java.util.Stack;
 
 
+import nl.han.ica.datastructures.HANStack;
 import nl.han.ica.icss.ast.*;
 import nl.han.ica.icss.ast.literals.*;
 import nl.han.ica.icss.ast.selectors.ClassSelector;
@@ -18,11 +19,11 @@ public class ASTListener extends ICSSBaseListener {
     private AST ast;
 
     //Use this to keep track of the parent nodes when recursively traversing the ast
-    private Stack<ASTNode> currentContainer;
+    private HANStack<ASTNode> currentContainer;
 
     public ASTListener() {
         ast = new AST();
-        currentContainer = new Stack<>(); //TODO: Dit moet HANStack worden!!!!
+        currentContainer = new HANStack<>(); //TODO: Dit moet HANStack worden!!!!
     }
 
     public AST getAST() {
@@ -41,6 +42,43 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     @Override
+    public void enterVariableAssignment(ICSSParser.VariableAssignmentContext ctx) {
+        VariableAssignment variableAssignment = new VariableAssignment();
+        variableAssignment.name = new VariableReference(ctx.variableReference().getText());
+
+        if (ctx.value().COLOR() != null) {
+            variableAssignment.expression = new ColorLiteral(ctx.value().COLOR().getText());
+        } else if (ctx.value().PIXELSIZE() != null) {
+            variableAssignment.expression = new PixelLiteral(ctx.value().PIXELSIZE().getText());
+        } else if (ctx.value().SCALAR() != null) {
+            variableAssignment.expression = new ScalarLiteral(ctx.value().SCALAR().getText());
+        } else if (ctx.value().PERCENTAGE() != null) {
+            variableAssignment.expression = new PercentageLiteral(ctx.value().PERCENTAGE().getText());
+        } else if (ctx.value().TRUE() != null || ctx.value().FALSE() != null) {
+            variableAssignment.expression = new BoolLiteral(ctx.value().getText());
+        }
+        currentContainer.push(variableAssignment);
+    }
+
+    @Override
+    public void exitVariableAssignment(ICSSParser.VariableAssignmentContext ctx) {
+        VariableAssignment variableAssignment = (VariableAssignment) currentContainer.pop();
+        currentContainer.peek().addChild(variableAssignment);
+    }
+
+    @Override
+    public void enterVariableReference(ICSSParser.VariableReferenceContext ctx) {
+        VariableReference variableReference = new VariableReference(ctx.getText());
+        currentContainer.push(variableReference);
+    }
+
+    @Override
+    public void exitVariableReference(ICSSParser.VariableReferenceContext ctx) {
+        VariableReference variableReference = (VariableReference) currentContainer.pop();
+        currentContainer.peek().addChild(variableReference);
+    }
+
+    @Override
     public void enterStylerule(ICSSParser.StyleruleContext ctx) {
         Stylerule stylerule = new Stylerule();
         currentContainer.push(stylerule);
@@ -51,7 +89,6 @@ public class ASTListener extends ICSSBaseListener {
         Stylerule stylerule = (Stylerule) currentContainer.pop();
         currentContainer.peek().addChild(stylerule);
     }
-
 
     @Override
     public void enterSelector(ICSSParser.SelectorContext ctx) {
@@ -81,8 +118,12 @@ public class ASTListener extends ICSSBaseListener {
         declaration.property = propertyName;
         Expression expression = null;
 
+        if (ctx.value().CAPITAL_IDENT() != null) {
+            String variabeleName = ctx.value().CAPITAL_IDENT().getText();
+            expression = new VariableReference(variabeleName);
+        }
         // Color literal: #ffffff
-        if (ctx.value().COLOR() != null) {
+        else if (ctx.value().COLOR() != null) {
             expression = new ColorLiteral(ctx.value().COLOR().getText());
         }
         // Pixel literal: 500px
@@ -101,7 +142,6 @@ public class ASTListener extends ICSSBaseListener {
         else if (ctx.value().TRUE() != null || ctx.value().FALSE() != null) {
             expression = new BoolLiteral(ctx.value().getText());
         }
-
         declaration.expression = expression;
         currentContainer.push(declaration);
     }
