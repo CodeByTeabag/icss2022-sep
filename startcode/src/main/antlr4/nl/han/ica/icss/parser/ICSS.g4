@@ -43,11 +43,13 @@ ASSIGNMENT_OPERATOR: ':=';
 
 
 //--- PARSER: ---
-// Level 0
-stylesheet: stylerule*;
-stylerule: selector  OPEN_BRACE declaration* CLOSE_BRACE;
+// Level 1
+stylesheet: variableAssignment* stylerule+;
+variableAssignment: variableReference ASSIGNMENT_OPERATOR value SEMICOLON;
+variableReference : CAPITAL_IDENT;
+stylerule: selector OPEN_BRACE declaration* CLOSE_BRACE;
 selector: ID_IDENT | CLASS_IDENT | LOWER_IDENT;
 declaration: property COLON value SEMICOLON;
 property: 'background-color' | 'color' | 'width';
-value: COLOR | PIXELSIZE | PERCENTAGE | SCALAR | TRUE | FALSE;
+value: COLOR | PIXELSIZE | PERCENTAGE | SCALAR | TRUE | FALSE | LOWER_IDENT | CAPITAL_IDENT;
 
