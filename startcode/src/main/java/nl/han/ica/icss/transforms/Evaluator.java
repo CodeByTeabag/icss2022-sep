@@ -3,6 +3,7 @@ package nl.han.ica.icss.transforms;
 import nl.han.ica.datastructures.HANLinkedList;
 import nl.han.ica.datastructures.IHANLinkedList;
 import nl.han.ica.icss.ast.*;
+import nl.han.ica.icss.ast.literals.ColorLiteral;
 import nl.han.ica.icss.ast.literals.PercentageLiteral;
 import nl.han.ica.icss.ast.literals.PixelLiteral;
 import nl.han.ica.icss.ast.literals.BoolLiteral;
@@ -15,6 +16,7 @@ public class Evaluator implements Transform {
 
     public Evaluator() {
         VARIABLE_VALUES = new HANLinkedList<>();
+        VARIABLE_VALUES.addFirst(new HashMap<>());
     }
 
     @Override
@@ -24,7 +26,10 @@ public class Evaluator implements Transform {
 
     private void applyStylesheet(Stylesheet node) {
         for (ASTNode child : node.getChildren()) {
-            if (child instanceof Stylerule) {
+            if (child instanceof VariableAssignment) {
+                applyVariableAssignment((VariableAssignment) child);
+            }
+            else if (child instanceof Stylerule) {
                 applyStylerule((Stylerule) child);
             }
         }
@@ -47,6 +52,15 @@ public class Evaluator implements Transform {
         }
     }
 
+    private void applyVariableAssignment(VariableAssignment node) {
+        Literal value = evalExpression(node.expression);
+
+        if (value != null) {
+            VARIABLE_VALUES.getFirst().put(node.name.name, value);
+        }
+    }
+
+
     public Literal evalExpression(Expression expression) {
         if (expression instanceof VariableReference) {
             return findVariableValue(((VariableReference) expression).name);
@@ -56,6 +70,9 @@ public class Evaluator implements Transform {
         }
         else if (expression instanceof PercentageLiteral) {
             return (PercentageLiteral) expression;
+        }
+        else if (expression instanceof ColorLiteral) {
+            return (ColorLiteral) expression; // Ensure ColorLiteral is returned
         }
         else if (expression instanceof BoolLiteral) {
             return (BoolLiteral) expression;
