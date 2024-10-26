@@ -1,29 +1,25 @@
 package nl.han.ica.icss.transforms;
 
+import nl.han.ica.datastructures.HANLinkedList;
 import nl.han.ica.datastructures.IHANLinkedList;
 import nl.han.ica.icss.ast.*;
 import nl.han.ica.icss.ast.literals.PercentageLiteral;
 import nl.han.ica.icss.ast.literals.PixelLiteral;
-import nl.han.ica.icss.ast.literals.ScalarLiteral;
-import nl.han.ica.icss.ast.operations.AddOperation;
-import nl.han.ica.icss.ast.operations.MultiplyOperation;
-import nl.han.ica.icss.ast.operations.SubtractOperation;
+import nl.han.ica.icss.ast.literals.BoolLiteral;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 
 public class Evaluator implements Transform {
 
-    private IHANLinkedList<HashMap<String, Literal>> variableValues;
+    private final IHANLinkedList<HashMap<String, Literal>> VARIABLE_VALUES;
 
     public Evaluator() {
-        //variableValues = new HANLinkedList<>();
+        VARIABLE_VALUES = new HANLinkedList<>();
     }
 
     @Override
     public void apply(AST ast) {
-        //variableValues = new HANLinkedList<>();
-        applyStylesheet((Stylesheet) ast.root);
+        applyStylesheet(ast.root);
     }
 
     private void applyStylesheet(Stylesheet node) {
@@ -44,12 +40,36 @@ public class Evaluator implements Transform {
     }
 
     private void applyDeclaration(Declaration node) {
-        if (node.expression != null) {
-            node.expression = null; //evalExpression(node.expression);
+        Literal literal = evalExpression(node.expression);
+
+        if (literal != null) {
+            node.expression = literal;
         }
     }
 
+    public Literal evalExpression(Expression expression) {
+        if (expression instanceof VariableReference) {
+            return findVariableValue(((VariableReference) expression).name);
+        }
+        else if (expression instanceof PixelLiteral) {
+            return (PixelLiteral) expression;
+        }
+        else if (expression instanceof PercentageLiteral) {
+            return (PercentageLiteral) expression;
+        }
+        else if (expression instanceof BoolLiteral) {
+            return (BoolLiteral) expression;
+        }
+        return null;
+    }
 
-
-
+    private Literal findVariableValue(String variableName) {
+        for (int i = 0; i < VARIABLE_VALUES.getSize(); i++) {
+            HashMap<String, Literal> scope = VARIABLE_VALUES.get(i);
+            if (scope.containsKey(variableName)) {
+                return scope.get(variableName);
+            }
+        }
+        return null;
+    }
 }
